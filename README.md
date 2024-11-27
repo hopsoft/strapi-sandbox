@@ -1,61 +1,59 @@
-# 🚀 Getting started with Strapi
+# Strapi Sandbox
 
-Strapi comes with a full featured [Command Line Interface](https://docs.strapi.io/dev-docs/cli) (CLI) which lets you scaffold and manage your project in seconds.
+This project is a sandbox for testing Strapi features, plugins, etc.
 
-### `develop`
+It mimics 2 environments:
 
-Start your Strapi application with autoReload enabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-develop)
+- Production: http://localhost:1337
+- Staging: http://localhost:1338
 
-```
-npm run develop
-# or
-yarn develop
-```
+This setup supports experimenting with various commands that handle transfering data between environments.
 
-### `start`
+## Usage
 
-Start your Strapi application with autoReload disabled. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-start)
+1. Clone the repository
 
-```
-npm run start
-# or
-yarn start
-```
+   ```bash
+   git clone https://github.com/hopsoft/strapi-sandbox.git
+   cd strapi-sandbox
+   ```
 
-### `build`
+1. Copy the `.env.example` file to `.env`
 
-Build your admin panel. [Learn more](https://docs.strapi.io/dev-docs/cli#strapi-build)
+   ```bash
+   cp .env.example .env
+   ```
 
-```
-npm run build
-# or
-yarn build
-```
+   Note that `docker-compose.yml` defines some default environment variables. `API_TOKEN_SALT`, `TRANSFER_TOKEN_SALT`, etc.
 
-## ⚙️ Deployment
+1. Start the sandbox with Docker
 
-Strapi gives you many possible deployment options for your project including [Strapi Cloud](https://cloud.strapi.io). Browse the [deployment section of the documentation](https://docs.strapi.io/dev-docs/deployment) to find the best solution for your use case.
+   ```bash
+   docker compose up -d
+   ```
 
-```
-yarn strapi deploy
-```
+   This will start 2 instances for Postgres and Strapi.
 
-## 📚 Learn more
+   - `postgres` is the "production" database instance
+   - `strapi` is the "production" Strapi instance _(available at port `1337` on the host)_
+   - `postgres-staging` is the "staging" database instance
+   - `strapi-staging` is the "staging" Strapi instance _(available at port `1338` on the host)_
 
-- [Resource center](https://strapi.io/resource-center) - Strapi resource center.
-- [Strapi documentation](https://docs.strapi.io) - Official Strapi documentation.
-- [Strapi tutorials](https://strapi.io/tutorials) - List of tutorials made by the core team and the community.
-- [Strapi blog](https://strapi.io/blog) - Official Strapi blog containing articles made by the Strapi team and the community.
-- [Changelog](https://strapi.io/changelog) - Find out about the Strapi product updates, new features and general improvements.
+1. Experiment with the Strapi CLI
 
-Feel free to check out the [Strapi GitHub repository](https://github.com/strapi/strapi). Your feedback and contributions are welcome!
+   ```bash
+   docker exec -it strapi-staging bash
+   npm run strapi -- --help
+   ```
 
-## ✨ Community
+1. Update the configuration and data on the "production" instance (https://localhost:1337)
 
-- [Discord](https://discord.strapi.io) - Come chat with the Strapi community including the core team.
-- [Forum](https://forum.strapi.io/) - Place to discuss, ask questions and find answers, show your Strapi project and get feedback or just talk with other Community members.
-- [Awesome Strapi](https://github.com/strapi/awesome-strapi) - A curated list of awesome things related to Strapi.
+1. Copy data from the "production" instance to the "staging" instance
 
----
+   _NOTE: You must create an API Token and Transfer Token on the "production" Strapi instance before proceeding._
 
-<sub>🤫 Psst! [Strapi is hiring](https://strapi.io/careers).</sub>
+   ```bash
+   docker exec -it strapi-staging bash
+   npm run strapi -- transfer --help
+   npm run strapi -- transfer --from=http://strapi:1337/admin --from-token=SECRET
+   ```

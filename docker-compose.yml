@@ -1,53 +1,85 @@
-services:
-  strapi:
-    container_name: strapi
-    platform: linux/amd64 #for platform error on Apple M1 chips
-    image: node:20
-    restart: unless-stopped
-    working_dir: /app
-    env_file: .env
-    environment:
-      DATABASE_CLIENT: postgres
-      DATABASE_HOST: database
-      DATABASE_PORT: 5432
-      DATABASE_NAME: ${DATABASE_NAME:-strapi}
-      DATABASE_USERNAME: ${DATABASE_USERNAME:-root}
-      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
-      NODE_ENV: development
-    command: sh -c "npm ci && npm run develop"
-    ports:
-      - "1337:1337"
-    networks:
-      - strapi
-    volumes:
-      - .:/app
-    depends_on:
-      - database
+volumes:
+  node_modules:
+  node_modules_staging:
+  strapi_data:
+  strapi_data_staging:
 
-  database:
-    container_name: database
-    platform: linux/amd64 #for platform error on Apple M1 chips
+services:
+  # ----------------------------------------------------------------------------
+  # Production environment
+  # ----------------------------------------------------------------------------
+  postgres: &postgres
     image: postgres:14
+    container_name: postgres
     restart: unless-stopped
+    volumes:
+      - strapi_data:/var/lib/postgresql/data
     env_file: .env
     environment:
       POSTGRES_DB: ${DATABASE_NAME:-strapi}
       POSTGRES_USER: ${DATABASE_USERNAME:-root}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-password}
-    networks:
-      - strapi
-    volumes:
-      - strapi-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USERNAME:-root} -d ${DATABASE_NAME:-strapi}"]
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${DATABASE_USERNAME:-root} -d ${DATABASE_NAME:-strapi}",
+        ]
       interval: 10s
       timeout: 5s
       retries: 5
 
-volumes:
-  strapi-data:
+  strapi: &strapi
+    image: node:20
+    container_name: strapi
+    depends_on:
+      - postgres
+    command: sh -c "npm clean-install && npm run develop"
+    restart: unless-stopped
+    working_dir: /app
+    env_file: .env
+    environment: &strapi_environment
+      DATABASE_CLIENT: postgres
+      DATABASE_HOST: postgres
+      DATABASE_NAME: ${DATABASE_NAME:-strapi}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD:-password}
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: ${DATABASE_USERNAME:-root}
+      NODE_ENV: development
+      API_TOKEN_SALT: ${API_TOKEN_SALT:-1d29657e3272a624d0157726cf61a8e7}
+      TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT:-1d29657e3272a624d0157726cf61a8e7}
+    ports:
+      - "1337:1337"
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "http://localhost:1337/admin"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
-networks:
-  strapi:
-    name: Strapi
-    driver: bridge
+  # ----------------------------------------------------------------------------
+  # Staging environment
+  # ----------------------------------------------------------------------------
+  postgres_staging:
+    <<: *postgres
+    container_name: postgres-staging
+    volumes:
+      - strapi_data_staging:/var/lib/postgresql/data
+
+  strapi_staging:
+    <<: *strapi
+    container_name: strapi-staging
+    depends_on:
+      - postgres_staging
+    environment:
+      <<: *strapi_environment
+      DATABASE_HOST: postgres-staging
+      API_TOKEN_SALT: ${API_TOKEN_SALT:-ab55cec61791f2d855d0215585b9a7ae}
+      TRANSFER_TOKEN_SALT: ${TRANSFER_TOKEN_SALT:-f793b15cabcebf2bfbff8b4d73eab356}
+    ports:
+      - "1338:1337"
+    volumes:
+      - .:/app
+      - node_modules_staging:/app/node_modules
