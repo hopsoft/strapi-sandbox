@@ -57,3 +57,9 @@ This setup supports experimenting with various commands that handle transfering 
    npm run strapi -- transfer --help
    npm run strapi -- transfer --from=http://strapi:1337/admin --from-token=SECRET
    ```
+
+1. Shutdown the sandbox
+
+   ```bash
+   docker compose down
+   ```
