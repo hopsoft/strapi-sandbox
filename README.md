@@ -7,6 +7,8 @@ The Docker setup mimics 2 environments with isolated PostgreSQL databases on a s
 - Production - hosted at http://localhost:1337
 - Staging - hosted at http://localhost:1338
 
+[Watch the demo on YouTube.](https://youtu.be/x4IiO7I8pLQ)
+
 ## Usage
 
 1. Clone the repository
