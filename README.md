@@ -1,13 +1,11 @@
 # Strapi Sandbox
 
-This project is a sandbox for testing Strapi features, plugins, etc.
+## Project for testing Strapi features, plugins, etc.
 
-It mimics 2 environments:
+The Docker setup mimics 2 environments with isolated PostgreSQL databases on a shared network.
 
-- Production: http://localhost:1337
-- Staging: http://localhost:1338
-
-This setup supports experimenting with various commands that handle transfering data between environments.
+- Production - hosted at http://localhost:1337
+- Staging - hosted at http://localhost:1338
 
 ## Usage
 
